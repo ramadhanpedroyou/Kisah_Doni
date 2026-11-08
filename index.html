@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Masa Depan Doni: Pilih Jalurmu!</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            background-color: #0b0b0b;
+            color: #fff;
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        /* Peringatan otomatis jika HP dalam posisi Portrait / Tegak */
+        #orientation-warning {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: #111;
+            z-index: 9999;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 20px;
+            color: #ffcc00;
+        }
+        @media screen and (orientation: portrait) {
+            #orientation-warning {
+                display: flex;
+            }
+        }
+
+        #game-container {
+            width: 100vw;
+            height: 100vh;
+            max-width: 900px;
+            max-height: 600px;
+            border: 3px solid #444;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
+            position: relative;
+            overflow: hidden;
+            
+            background-image: url('BG ALMIDINI.jpeg'); 
+            background-size: cover;
+            background-position: center;
+        }
+
+        #bg-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            z-index: 1;
+            transition: 0.3s ease;
+        }
+
+        #bg-layer.bg-blur {
+            filter: blur(6px) brightness(0.5);
+        }
+
+        #bg-layer.bg-hd {
+            filter: blur(0px) brightness(1);
+        }
+
+        @media (min-width: 900px) {
+            #game-container {
+                border-radius: 8px;
+                border: 4px solid #fff;
+            }
+        }
+        .screen {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            text-align: center;
+            position: relative;
+            z-index: 2;
+        }
+        .hidden {
+            display: none !important;
+        }
+        h1 {
+            font-size: 2.2rem;
+            margin-bottom: 20px;
+            color: #ffcc00;
+            text-shadow: 2px 2px #ff0000;
+        }
+        .btn {
+            background: #222;
+            color: #fff;
+            border: 2px solid #fff;
+            padding: 12px 24px;
+            font-size: 1.1rem;
+            font-family: 'Courier New', Courier, monospace;
+            cursor: pointer;
+            margin: 10px;
+            transition: 0.2s;
+        }
+        .btn:hover {
+            background: #fff;
+            color: #000;
+        }
+
+        #in-game-settings-btn {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            background: #222;
+            color: #ffcc00;
+            border: 2px solid #ffcc00;
+            padding: 5px 12px;
+            font-size: 0.9rem;
+            font-family: 'Courier New', Courier, monospace;
+            cursor: pointer;
+            z-index: 10;
+        }
+        #in-game-settings-btn:hover {
+            background: #ffcc00;
+            color: #000;
+        }
+
+        #character-stage {
+            flex-grow: 1;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            width: 100%;
+            padding: 10px 0;
+            position: relative;
+        }
+
+        .character-sprite {
+            width: 140px;
+            height: 200px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: bottom;
+            transition: 0.3s ease;
+            filter: grayscale(80%) brightness(40%);
+            opacity: 0.4;
+            display: none; 
+        }
+
+        .character-sprite.active {
+            filter: grayscale(0%) brightness(100%);
+            opacity: 1;
+            transform: scale(1.05);
+        }
+
+        /* ==========================================================
+           [INPUT DESIGN/VISUAL 1] SPRITE KARAKTER DONI (3 Ekspresi)
+           ========================================================== */
+        #sprite-doni.doni-bahagia { background-image: url('Doni Bahagia.png'); }
+        #sprite-doni.doni-bingung  { background-image: url('DoniBIngung.png'); }
+        #sprite-doni.doni-marah   { background-image: url('DoniMarah.png'); }
+
+        /* ==========================================================
+           [INPUT DESIGN/VISUAL 2] SPRITE KARAKTER IBU (3 Ekspresi)
+           ========================================================== */
+        #sprite-ibu.ibu-biasa  { background-image: url('IbuBIasa.png'); }
+        #sprite-ibu.ibu-panik  { background-image: url('IbuPanik.png'); }
+        #sprite-ibu.ibu-marah  { background-image: url('Ibu Marah.png'); }
+
+        /* ==========================================================
+           [INPUT DESIGN/VISUAL 3] SPRITE KARAKTER TEMAN DONI
+           ========================================================== */
+        #sprite-teman.teman-biasa { background-image: url('Kawandoni.png'); }
+
+
+        #dialogue-container {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        #dialogue-box {
+            min-height: 140px;
+            border: 3px solid #fff;
+            padding: 15px;
+            background: #1c1c1c;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            position: relative;
+        }
+        #speaker-name {
+            font-weight: bold;
+            color: #ffcc00;
+            margin-bottom: 6px;
+            font-size: 1.1rem;
+            letter-spacing: 1px;
+        }
+        #dialogue-text {
+            font-size: 1.05rem;
+            line-height: 1.5;
+            text-align: left;
+        }
+        #choices-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 10px;
+            width: 100%;
+        }
+        .choice-btn {
+            background: #111;
+            color: #ffcc00;
+            border: 2px solid #ffcc00;
+            padding: 10px 15px;
+            text-align: left;
+            cursor: pointer;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.95rem;
+            transition: 0.2s;
+        }
+        .choice-btn:hover {
+            background: #ffcc00;
+            color: #000;
+        }
+        
+        .shake-char {
+            display: inline-block;
+            animation: textShake 0.2s infinite alternate;
+        }
+        @keyframes textShake {
+            0% { transform: translateY(1px); }
+            100% { transform: translateY(-2px); }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="orientation-warning">
+        <h2>⚠️ MOHON PUTAR HP ANDA ⚠️</h2>
+        <p style="color: #fff; margin-top: 10px; font-size: 0.95rem;">Game ini dirancang dalam mode mendatar (Landscape). Silakan rotasi HP kamu ke samping agar nyaman dimainkan!</p>
+    </div>
+
+    <!-- ============================================================== -->
+    <!-- [INPUT SOUND - TAG AUDIO HTML]                                 -->
+    <!-- ============================================================== -->
+    <audio id="bgm-spongebob" src="bgm.mpeg.mpeg" loop></audio>
+    <audio id="sfx-click" src="ClickS.mpeg"></audio>
+    <audio id="sfx-blip" src=""></audio>
+    <audio id="sfx-tetot" src="Fahh sound.mpeg"></audio>
+    <audio id="sbg-good" src="Ting sound.mpeg"></audio>
+
+    <div id="game-container" onclick="handleScreenClick()">
+        
+        <div id="bg-layer" class="bg-blur"></div>
+
+        <div id="menu-screen" class="screen" onclick="event.stopPropagation()">
+            <h1>MASA DEPAN DONI</h1>
+            <p style="margin-bottom: 30px; color: #aaa;">Sebuah Game Pilihan Hidup Lulusan SMK</p>
+            <button class="btn" onclick="startGame()">MASUK</button>
+            <button class="btn" onclick="openSettings('menu')">PENGATURAN</button>
+        </div>
+
+        <div id="settings-screen" class="screen hidden" onclick="event.stopPropagation()">
+            <h1>PENGATURAN VOLUME</h1>
+            <div style="background: rgba(26,26,26,0.9); padding: 25px; border: 2px solid #fff; width: 350px; text-align: left;">
+                <label for="volume-slider" style="font-size: 1rem; display: block; margin-bottom: 10px;">Volume Utama (BGM & SFX):</label>
+                <input type="range" id="volume-slider" min="0" max="1" step="0.05" value="0.5" style="width: 100%; cursor: pointer;" oninput="changeVolume(this.value)">
+                <p id="volume-text" style="text-align: center; margin-top: 10px; font-size: 0.9rem; color: #ffcc00;">50%</p>
+            </div>
+            <button class="btn" onclick="closeSettings()" style="margin-top: 20px;">KEMBALI</button>
+        </div>
+
+        <div id="gameplay-screen" class="screen hidden" style="justify-content: space-between; height: 100%;">
+            <button id="in-game-settings-btn" onclick="openSettings('gameplay')">⚙️ Pengaturan</button>
+
+            <!-- Panggung Karakter: Kiri (Doni) & Kanan (Ibu / Teman) -->
+            <div id="character-stage">
+                <div class="character-sprite doni-bahagia" id="sprite-doni"></div>
+                <div class="character-sprite ibu-biasa" id="sprite-ibu"></div>
+                <div class="character-sprite teman-biasa" id="sprite-teman"></div>
+            </div>
+
+            <div id="dialogue-container">
+                <div id="dialogue-box">
+                    <div id="speaker-name">NARATOR</div>
+                    <div id="dialogue-text"></div>
+                    <div id="choices-container" class="hidden" onclick="event.stopPropagation()"></div>
+                </div>
+                <div style="font-size: 0.75rem; color: #666; text-align: right; margin-top: 3px;">[Klik layar untuk lanjut]</div>
+            </div>
+        </div>
+
+        <div id="gameover-screen" class="screen hidden" onclick="event.stopPropagation()">
+            <h1 style="color: #ff3333;">ANDA KALAH / BAD ENDING</h1>
+            <p id="gameover-reason" style="margin: 20px; font-size: 1.05rem; line-height: 1.6; max-width: 700px; text-align: left; background: rgba(26,26,26,0.9); padding: 20px; border: 2px solid #ff3333;"></p>
+            <button class="btn" onclick="retryGame()">Coba Lagi</button>
+        </div>
+
+        <div id="ending-screen" class="screen hidden" onclick="event.stopPropagation()" style="overflow-y: auto; justify-content: center; padding: 20px;">
+            <h1 style="color: #00ff66;">TAMAT - GOOD ENDING</h1>
+            <p style="line-height: 1.6; font-size: 1.05rem; margin-bottom: 20px; max-width: 700px; text-align: left; background: rgba(26,26,26,0.9); padding: 20px;">
+                Berkat kerja keras, riset mandiri, dan dukungan ibunya, Doni berhasil melewati masa kebingungannya. Ia mendaftar ke kampus impian yang sesuai dengan keahlian kodingnya dan biaya yang ramah keluarga!
+            </p>
+            <button class="btn" onclick="showReview()">Review / Kredit Kelompok</button>
+        </div>
+
+        <!-- REVIEW & KREDIT KELOMPOK + KESIMPULAN JAWABAN GURU -->
+        <div id="review-screen" class="screen hidden" onclick="event.stopPropagation()" style="overflow-y: auto; justify-content: center; padding: 20px;">
+            <h2>🌟 KREDIT TIM PENGEMBANG 🌟</h2>
+            <div style="text-align: left; background: rgba(34,34,34,0.9); padding: 15px; border: 1px solid #fff; width: 100%; max-width: 700px; margin: 10px 0; font-size: 0.9rem;">
+                <p><strong>Nama Proyek:</strong> Masa Depan Doni</p>
+                <p><strong>Rizki Ramadhan</strong> — Ketua Kelompok / Game Programmer</p>
+                <p><strong>Pajar Afriano</strong> — Scriptwriter & Storyteller</p>
+                <p><strong>Rahmat Hidayat</strong> — UI/UX & Asset Designer</p>
+                <p><strong>Mas Fadlan Adi Syaputra</strong> — UI/UX & Asset Designer</p>
+                <p><strong>Uti Rizky Ramadhan</strong> — UI/UX & Asset Designer</p>
+                <p><strong>Afdal Qiran Ulamri</strong> — Soundtrack</p>
+                <p><strong>Arya Satya Raditiya</strong> — Soundtrack</p>
+            </div>
+            
+            <!-- TOMBOL KESIMPULAN UNTUK JAWABAN GURU -->
+            <button class="btn" onclick="toggleConclusion()" style="background: #00ff66; color: #000; font-weight: bold; margin: 5px;">📜 LIHAT KESIMPULAN JAWABAN</button>
+            
+            <!-- KOTAK POP-UP KESIMPULAN -->
+            <div id="conclusion-box" class="hidden" style="text-align: left; background: rgba(20,20,20,0.95); padding: 15px; border: 2px solid #00ff66; width: 100%; max-width: 700px; margin: 10px 0; font-size: 0.85rem; line-height: 1.5;">
+                <p style="color: #00ff66; font-weight: bold; text-align: center; margin-bottom: 8px;">💡 KESIMPULAN KISAH / JAWABAN UNTUK GURU:</p>
+                <p><em>"Inti dari kisah 'Masa Depan Doni' adalah bahwa seorang lulusan SMK harus mengambil keputusan hidup secara sadar, terencana, dan realistis. Semangat saja tidak cukup; Doni harus menghadapi tantangan nyata berupa keterbatasan ekonomi keluarga dan kebingungan arah karier."</em></p>
+                <p style="margin-top: 6px;"><strong>Inti Jawaban Dari Kondisi Doni :</strong></p>
+                <p>1. <strong>Tantangan apa yang sedang dialami Doni ? :</strong> Keterbatasan Ekonomi (Biaya Kuliah),Kebingungan menentukan pilihan, dan godaan jalan pintas yang salah.</p>
+                <p>2. <strong>Potensi/ Kekuatan apa yang dapat digunakan Doni ?:</strong>Semangat dan percaya diri yang tinggi, Keahlian dalam bidang pemograman, Dukungan Keluarga. </p>
+                <p>3. <strong>Keterampilan/Informasi Apa yang dibutuhkan Doni ?:</strong>informasi Biaya dan Jalur Masuk Kuliah,Riset Pilihan Jurusan IT/Vokasi,Keterampilan Literasi Digital & Perencanaan.</p>
+                <p>4. <strong>Apa Satu Langkah Awal yang bisa dilakukan Doni ?</strong>Berkonsultasi dengan Guru BK di Sekolah & Riset Mandiri.</p>
+            </div>
+
+            <button class="btn" onclick="backToMenu()" style="margin-top: 10px;">Kembali ke Menu Utama</button>
+        </div>
+
+    </div>
+
+    <script>
+        const storyData = {
+            1: { speaker: "NARATOR", text: "Ini adalah Doni. Doni adalah anak lulusan SMK Al-Midini dengan semangat yang tinggi serta percaya diri.", next: 2, bg: "sekolah", doni: "doni-bahagia", ibu: "ibu-biasa", teman: "teman-biasa" },
+            2: { speaker: "NARATOR", text: "Hari ini adalah hari kelulusannya. Ia mengambil rapot di sekolahnya, menandakan masa SMK-nya telah resmi usai.", next: 3, bg: "sekolah", doni: "doni-bahagia", ibu: "ibu-biasa", teman: "teman-biasa" },
+            3: { speaker: "DONI", avatar: "doni", text: "Wah, akhirnya lulus juga dari Sekolah Al-Midini! Walaupun fasilitasnya sederhana, setidaknya ilmu yang kudapat lumayan.", next: 4, bg: "sekolah", doni: "doni-bahagia", ibu: "ibu-biasa", teman: "teman-biasa" },
+            4: { speaker: "DONI", avatar: "doni", text: "Rapot sudah kupegang. Rasanya perjalananku baru saja dimulai. Tapi sebelum itu, aku nongki dulu ah, ee!! maksudnya pulang dulu ah, Ibu pasti sudah menungguku.", next: 5, bg: "sekolah", doni: "doni-bingung", ibu: "ibu-biasa", teman: "teman-biasa" },
+            
+            5: { speaker: "DONI", avatar: "doni", text: "Assalamu'alaikum, Bu. Aku sudah pulang. Tidak terasa ya, Bu, aku sudah lulus.", next: 6, bg: "rumah", doni: "doni-bahagia", ibu: "ibu-biasa", teman: "teman-biasa" },
+            6: {
+                speaker: "IBU DONI", avatar: "ibu",
+                text: "Wa'alaikumussalam, Doni. Sekarang anak ibu sudah lulus sekolah ya. Kamu harus menentukan alur hidupmu ke depannya, Doni. Apa yang akan kamu lakukan selanjutnya?",
+                choices: [
+                    { text: "A. Aku ingin lanjut kuliah, Bu. Aku selalu memimpikannya.", next: 7 },
+                    { text: "B. Aku ingin menjadi admin judol, Bu. Gajinya besar dan temanku mengajakku ke Kamboja.", next: "bad1_dialog" }
+                ],
+                bg: "rumah", doni: "doni-bahagia", ibu: "ibu-biasa", teman: "teman-biasa"
+            },
+            7: { speaker: "IBU DONI", avatar: "ibu", text: "Wah, itu ide yang sangat bagus, tapi Doni...", next: 8, bg: "rumah", doni: "doni-bingung", ibu: "ibu-biasa", teman: "teman-biasa" },
+            8: { speaker: "DONI", avatar: "doni", text: "Tapi kenapa, Bu?", next: 9, bg: "rumah", doni: "doni-bingung", ibu: "ibu-biasa", teman: "teman-biasa" },
+            9: { speaker: "IBU DONI", avatar: "ibu", text: "Kita ini keluarga sederhana, keluarga kita tidak ada yang pernah kuliah. Apakah kamu tahu apa yang harus kamu lakukan?", next: 10, bg: "rumah", doni: "doni-bingung", ibu: "ibu-panik", teman: "teman-biasa" },
+            10: { speaker: "DONI", avatar: "doni", text: "Hmm.. iya juga ya, Bu. Apa yang harus aku lakukan kira-kira?", next: 11, bg: "rumah", doni: "doni-bingung", ibu: "ibu-biasa", teman: "teman-biasa" },
+            
+            11: {
+                speaker: "NARATOR",
+                text: "Doni sadar, semangat saja tidak cukup. Ia buta arah jurusan dan buta biaya. Apa yang harus Doni lakukan malam ini di kamarnya?",
+                choices: [
+                    { text: "A. Membuka laptop, riset kisaran biaya (UKT) & daftar jurusan IT/Vokasi via internet.", next: 12 },
+                    { text: "B. Tidur saja dan pasrah, nanti juga ada kampus yang mau menerima secara gratis.", next: "bad2_dialog" }
+                ],
+                bg: "kamar", doni: "doni-bingung", ibu: "ibu-biasa", teman: "teman-biasa"
+            },
+            
+            12: { speaker: "NARATOR", text: "Keesokan paginya, matahari bersinar cerah. Doni memulai langkah awal pertamanya...", next: 13, bg: "sekolah", doni: "doni-bahagia", ibu: "ibu-biasa", teman: "teman-biasa" },
+            13: {
+                speaker: "DONI", avatar: "doni",
+                text: "Oke! Mulai hari ini, aku harus ambil langkah nyata. Aku mau...",
+                choices: [
+                    { text: "A. Konsultasi ke guru BK SMK dan mencatat 3 pilihan kampus impian sesuai budget.", next: "good_dialog" },
+                    { text: "B. Meminta rekomendasi jurusan acak dari teman tongkrongan yang tidak jelas.", next: "bad3_dialog" }
+                ],
+                bg: "sekolah", doni: "doni-bahagia", ibu: "ibu-biasa", teman: "teman-biasa"
+            }
+        };
+
+        let currentSceneId = 1;
+        let charIndex = 0;
+        let typingInterval = null;
+        let isTyping = false;
+        let currentFullText = "";
+        let waitingForChoice = false;
+        
+        let activeMode = null; 
+        let dialogStep = 0;
+        let globalVolume = 0.5;
+        let previousScreen = 'menu';
+
+        const cutsceneDialogues = {
+            bad1: [
+                { speaker: "DONI", avatar: "doni", text: "Aku ingin menjadi admin judol, Bu! Gajinya besar dan temanku sudah mengajakku ke Kamboja.", doni: "doni-bahagia", ibu: "ibu-biasa", teman: "teman-biasa", bg: "rumah" },
+                { speaker: "IBU DONI", avatar: "ibu", text: "Astagfirullah, Doni! Kamu yang benar saja! Gak boleh, Nak, durhaka kamu!", doni: "doni-bingung", ibu: "ibu-marah", teman: "teman-biasa", bg: "rumah" },
+                { speaker: "DONI", avatar: "doni", text: "Aku tidak peduli, Ibu! Aku akan berangkat sekarang karena aku pandai meng-coding, jadi aku pasti bisa kaya dari itu. Dadah!", doni: "doni-marah", ibu: "ibu-marah", teman: "teman-biasa", bg: "rumah" },
+                { speaker: "IBU DONI", avatar: "ibu", text: "DONII!!", doni: "doni-marah", ibu: "ibu-panik", teman: "teman-biasa", bg: "rumah" }
+            ],
+            bad2: [
+                { speaker: "DONI", avatar: "doni", text: "Ah, tidur saja lah. Biar semesta yang mengatur jalanku besok!", doni: "doni-bahagia", ibu: "ibu-biasa", teman: "teman-biasa", bg: "kamar" },
+                { speaker: "IBU DONI", avatar: "ibu", text: "Doni, bangun! Ini tagihan uang pendaftaran kampus swasta pilihan acakmu datang, harganya mahal sekali!", doni: "doni-bingung", ibu: "ibu-panik", teman: "teman-biasa", bg: "kamar" },
+                { speaker: "DONI", avatar: "doni", text: "Hah?! Darimana uangnya, Bu? Aku tidak sanggup bayar semesterannya...", doni: "doni-marah", ibu: "ibu-panik", teman: "teman-biasa", bg: "kamar" },
+                { speaker: "IBU DONI", avatar: "ibu", text: "Ya Allah, Nak... Kita mau makan apa kalau uangnya habis buat ini?", doni: "doni-marah", ibu: "ibu-marah", teman: "teman-biasa", bg: "kamar" }
+            ],
+            bad3: [
+                { speaker: "TEMAN", avatar: "teman", text: "Udah Don, masuk jurusan teater boneka mistis aja bareng gua, seru!", doni: "doni-bingung", ibu: "ibu-biasa", teman: "teman-biasa", bg: "sekolah" },
+                { speaker: "DONI", avatar: "doni", text: "Hmm, oke deh ikut lu aja bro, yang penting kuliah.", doni: "doni-bahagia", ibu: "ibu-biasa", teman: "teman-biasa", bg: "sekolah" },
+                { speaker: "NARATOR", avatar: "doni", text: "Beberapa bulan kemudian...", doni: "doni-bingung", ibu: "ibu-biasa", teman: "teman-biasa", bg: "kamar" },
+                { speaker: "DONI", avatar: "doni", text: "Duh... gua salah jurusan banget, gak ngerti materinya, kodingan gua malah terbengkalai. Stres banget!", doni: "doni-marah", ibu: "ibu-biasa", teman: "teman-biasa", bg: "kamar" }
+            ],
+            good: [
+                { speaker: "DONI", avatar: "doni", text: "Bu, alhamdulillah! Berkat riset kemarin dan saran guru BK, aku lolos seleksi Vokasi di kampus impian dengan beasiswa!", doni: "doni-bahagia", ibu: "ibu-biasa", teman: "teman-biasa", bg: "rumah" },
+                { speaker: "IBU DONI", avatar: "ibu", text: "Alhamdulillah ya Allah... Ibu bangga sama kamu, Doni. Kerja kerasmu terbayar juga.", doni: "doni-bahagia", ibu: "ibu-biasa", teman: "teman-biasa", bg: "rumah" },
+                { speaker: "DONI", avatar: "doni", text: "Iya, Bu! Ini semua berkat doa dan bimbingan Ibu. Perjuanganku kuliah baru saja dimulai!", doni: "doni-bahagia", ibu: "ibu-biasa", teman: "teman-biasa", bg: "rumah" }
+            ]
+        };
+
+        function playSfx(id) {
+            let sfx = document.getElementById(id);
+            if(sfx) {
+                sfx.currentTime = 0;
+                sfx.volume = globalVolume;
+                sfx.play().catch(e => {});
+            }
+        }
+
+        function setGameBackground(bgName, isBlur) {
+            let bgLayer = document.getElementById('bg-layer');
+            
+            if (bgName === 'rumah') {
+                bgLayer.style.backgroundImage = "url('RUmah.jpeg')"; 
+            } else if (bgName === 'kamar') {
+                bgLayer.style.backgroundImage = "url('Kamar.jpeg')"; 
+            } else {
+                bgLayer.style.backgroundImage = "url('BG ALMIDINI.jpeg')"; 
+            }
+
+            if (isBlur) {
+                bgLayer.classList.add('bg-blur');
+                bgLayer.classList.remove('bg-hd');
+            } else {
+                bgLayer.classList.add('bg-hd');
+                bgLayer.classList.remove('bg-blur');
+            }
+        }
+
+        function startGame() {
+            playSfx('sfx-click');
+            document.getElementById('menu-screen').classList.add('hidden');
+            document.getElementById('gameplay-screen').classList.remove('hidden');
+            
+            let bgm = document.getElementById('bgm-spongebob');
+            if(bgm) { bgm.volume = globalVolume; bgm.play().catch(error => {}); }
+
+            loadScene(1);
+        }
+
+        function openSettings(from) {
+            playSfx('sfx-click');
+            previousScreen = from; 
+            if (from === 'menu') {
+                document.getElementById('menu-screen').classList.add('hidden');
+            } else {
+                document.getElementById('gameplay-screen').classList.add('hidden');
+            }
+            document.getElementById('settings-screen').classList.remove('hidden');
+        }
+
+        function closeSettings() {
+            playSfx('sfx-click');
+            document.getElementById('settings-screen').classList.add('hidden');
+            if (previousScreen === 'menu') {
+                document.getElementById('menu-screen').classList.remove('hidden');
+            } else {
+                document.getElementById('gameplay-screen').classList.remove('hidden');
+            }
+        }
+
+        function changeVolume(val) {
+            globalVolume = parseFloat(val);
+            document.getElementById('volume-text').innerText = Math.round(globalVolume * 100) + "%";
+            let bgm = document.getElementById('bgm-spongebob');
+            if(bgm) bgm.volume = globalVolume;
+        }
+
+        function loadScene(id) {
+            currentSceneId = id;
+            activeMode = null;
+            let scene = storyData[id];
+            
+            setGameBackground(scene.bg, false);
+
+            let choicesContainer = document.getElementById('choices-container');
+            choicesContainer.classList.add('hidden');
+            choicesContainer.innerHTML = '';
+            waitingForChoice = false;
+
+            updateCharacterSprites(scene.speaker, scene.doni, scene.ibu, scene.teman);
+            document.getElementById('speaker-name').innerText = scene.speaker;
+
+            typeText(scene.text, function() {
+                if (scene.choices) {
+                    waitingForChoice = true;
+                    showChoices(scene.choices);
+                }
+            });
+        }
+
+        function updateCharacterSprites(speaker, doniClass, ibuClass, temanClass) {
+            let spriteDoni = document.getElementById('sprite-doni');
+            let spriteIbu = document.getElementById('sprite-ibu');
+            let spriteTeman = document.getElementById('sprite-teman');
+
+            spriteDoni.style.display = "block";
+            spriteIbu.style.display = "none";
+            spriteTeman.style.display = "none";
+
+            spriteDoni.className = "character-sprite " + doniClass;
+            spriteIbu.className = "character-sprite " + ibuClass;
+            spriteTeman.className = "character-sprite " + temanClass;
+
+            if (speaker === "TEMAN") {
+                spriteTeman.style.display = "block";
+            } else {
+                spriteIbu.style.display = "block";
+            }
+
+            spriteDoni.classList.remove('active');
+            spriteIbu.classList.remove('active');
+            spriteTeman.classList.remove('active');
+
+            if (speaker === "DONI") {
+                spriteDoni.classList.add('active');
+            } else if (speaker === "IBU DONI" || speaker === "IBU") {
+                spriteIbu.classList.add('active');
+            } else if (speaker === "TEMAN") {
+                spriteTeman.classList.add('active');
+            }
+        }
+
+        function typeText(text, callback) {
+            let targetElement = document.getElementById('dialogue-text');
+            targetElement.innerHTML = '';
+            charIndex = 0;
+            isTyping = true;
+            currentFullText = text;
+            
+            clearInterval(typingInterval);
+            typingInterval = setInterval(function() {
+                if (charIndex < text.length) {
+                    let char = text.charAt(charIndex);
+                    let span = document.createElement('span');
+                    span.innerText = char;
+                    if (char === '!' || char === '?') {
+                        span.classList.add('shake-char');
+                    }
+                    targetElement.appendChild(span);
+                    charIndex++;
+                } else {
+                    clearInterval(typingInterval);
+                    isTyping = false;
+                    if (callback) callback();
+                }
+            }, 25);
+        }
+
+        function handleScreenClick() {
+            if (!document.getElementById('gameplay-screen').classList.contains('hidden')) {
+                if (isTyping) {
+                    clearInterval(typingInterval);
+                    document.getElementById('dialogue-text').innerHTML = currentFullText;
+                    isTyping = false;
+                    
+                    let scene = storyData[currentSceneId];
+                    if (scene && scene.choices && !activeMode) {
+                        waitingForChoice = true;
+                        showChoices(scene.choices);
+                    }
+                    return;
+                }
+
+                if (activeMode) {
+                    dialogStep++;
+                    let dialogList = cutsceneDialogues[activeMode];
+                    if (dialogStep < dialogList.length) {
+                        runCutsceneStep();
+                    } else {
+                        finalizeActiveMode(activeMode);
+                    }
+                    return;
+                }
+
+                if (waitingForChoice) return;
+
+                let scene = storyData[currentSceneId];
+                if (scene && !scene.choices && scene.next) {
+                    if (typeof scene.next === 'number') {
+                        loadScene(scene.next);
+                    }
+                }
+            }
+        }
+
+        function showChoices(choices) {
+            let container = document.getElementById('choices-container');
+            container.classList.remove('hidden');
+            
+            choices.forEach(choice => {
+                let btn = document.createElement('button');
+                btn.className = 'choice-btn';
+                btn.innerText = choice.text;
+                btn.onclick = function(e) {
+                    e.stopPropagation();
+                    playSfx('sfx-click');
+
+                    container.innerHTML = '';
+                    container.classList.add('hidden');
+                    waitingForChoice = false;
+                    handleChoiceResult(choice.next);
+                };
+                container.appendChild(btn);
+            });
+        }
+
+        function handleChoiceResult(nextTarget) {
+            if (typeof nextTarget === 'string' && nextTarget.includes('_dialog')) {
+                activeMode = nextTarget.replace('_dialog', '');
+                dialogStep = 0;
+                runCutsceneStep();
+            } else if (typeof nextTarget === 'number') {
+                loadScene(nextTarget);
+            }
+        }
+
+        function runCutsceneStep() {
+            let dialogList = cutsceneDialogues[activeMode];
+            let d = dialogList[dialogStep];
+            
+            setGameBackground(d.bg, false);
+            document.getElementById('speaker-name').innerText = d.speaker;
+            updateCharacterSprites(d.speaker, d.doni, d.ibu, d.teman);
+
+            typeText(d.text, function() {
+                isTyping = false;
+            });
+        }
+
+        function finalizeActiveMode(mode) {
+            activeMode = null;
+            dialogStep = 0;
+            
+            setGameBackground('sekolah', true);
+
+            if (mode === 'good') {
+                playSfx('sbg-good');
+                triggerGoodEnding();
+            } else {
+                playSfx('sfx-tetot');
+
+                let reason = "";
+                if (mode === 'bad1') {
+                    reason = "Doni pergi bersama temannya ke Kamboja. Bukannya menjadi admin judol, ia malah dijual oleh temannya ke sindikat penjualan organ ilegal!";
+                } else if (mode === 'bad2') {
+                    reason = "Karena pasrah dan tidak merencanakan apa-apa, Doni salah masuk ke perguruan tinggi swasta abal-abalan yang mahal, terlilit hutang, dan akhirnya putus kuliah di tengah jalan.";
+                } else if (mode === 'bad3') {
+                    reason = "Doni asal ikut pilihan temannya tanpa riset. Ia salah jurusan, merasa salah kamar, kehilangan semangat, dan akhirnya gagal menyelesaikan kuliahnya.";
+                }
+                triggerGameOver(reason);
+            }
+        }
+
+        function triggerGameOver(reason) {
+            setGameBackground('sekolah', true);
+            document.getElementById('gameplay-screen').classList.add('hidden');
+            document.getElementById('gameover-screen').classList.remove('hidden');
+            document.getElementById('gameover-reason').innerText = reason;
+        }
+
+        function retryGame() {
+            playSfx('sfx-click');
+            document.getElementById('gameover-screen').classList.add('hidden');
+            document.getElementById('gameplay-screen').classList.remove('hidden');
+            loadScene(1); 
+        }
+
+        function triggerGoodEnding() {
+            setGameBackground('sekolah', true);
+            document.getElementById('gameplay-screen').classList.add('hidden');
+            document.getElementById('ending-screen').classList.remove('hidden');
+        }
+
+        function showReview() {
+            playSfx('sfx-click');
+            setGameBackground('sekolah', true);
+            document.getElementById('ending-screen').classList.add('hidden');
+            document.getElementById('review-screen').classList.remove('hidden');
+        }
+
+        // Fungsi Membuka/Menutup Kotak Kesimpulan di Layar Review
+        function toggleConclusion() {
+            playSfx('sfx-click');
+            let box = document.getElementById('conclusion-box');
+            if (box.classList.contains('hidden')) {
+                box.classList.remove('hidden');
+            } else {
+                box.classList.add('hidden');
+            }
+        }
+
+        function backToMenu() {
+            playSfx('sfx-click');
+            setGameBackground('sekolah', true);
+            document.getElementById('review-screen').classList.add('hidden');
+            document.getElementById('menu-screen').classList.add('hidden');
+            document.getElementById('menu-screen').classList.remove('hidden');
+            
+            // Sembunyikan kembali kotak kesimpulan jika sempat dibuka
+            document.getElementById('conclusion-box').classList.add('hidden');
+
+            currentSceneId = 1;
+            activeMode = null;
+            dialogStep = 0;
+        }
+    </script>
+</body>
+</html>
